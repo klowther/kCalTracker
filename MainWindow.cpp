@@ -425,7 +425,7 @@ void MainWindow::on_foodListTableWidget_cellChanged(int row, int column)
                 ui->foodListTableWidget->item(row, 6)->setText(QString::number(fiber));
                 ui->foodListTableWidget->item(row, 7)->setText(QString::number(protein));
 
-                m_idFoodDataMap[iter->first]->setNumServings(newNumServings);
+                m_idFoodDataMap[iter->first]->setNumServings(numServings);
                 m_idFoodDataMap[iter->first]->setCalories(calories);
                 m_idFoodDataMap[iter->first]->setFats(fats);
                 m_idFoodDataMap[iter->first]->setCarbs(carbs);
