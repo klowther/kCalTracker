@@ -8,6 +8,8 @@ QT       += core gui sql
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
+QMAKE_MAC_SDK = macosx10.12
+
 TARGET = kCalTracker
 TEMPLATE = app
 
