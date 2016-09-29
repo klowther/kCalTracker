@@ -13,7 +13,7 @@
 using namespace std;
 
 MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent), ui(new Ui::MainWindow), m_masterFoodRows(0), m_foodRows(0)
+    QMainWindow(parent), ui(new Ui::MainWindow), m_masterFoodRows(0), m_foodRows(0), m_mealFoodRows(0), m_mealCreatorName(""), m_mealCreatorServings(0.0)
 {
     ui->setupUi(this);
 
@@ -26,35 +26,42 @@ MainWindow::MainWindow(QWidget *parent) :
     QStringList totalsHeaders;
     totalsHeaders << "Calories" << "Fats" << "Carbs" << "Fiber" << "Protein";
 
+    ui->masterFoodTableWidget->setColumnCount(7);
+    ui->masterFoodTableWidget->setHorizontalHeaderLabels(headers);
+
     ui->foodListTableWidget->setColumnCount(8);
     ui->foodListTableWidget->setHorizontalHeaderLabels(dailyFoodsHeaders);
+
+    ui->mealCreatorFoodList->setColumnCount(7);
+    ui->mealCreatorFoodList->setHorizontalHeaderLabels(headers);
+
+    ui->foodTotalsTableWidget->setColumnCount(5);
+    ui->foodTotalsTableWidget->setHorizontalHeaderLabels(totalsHeaders);
+
+    ui->mealTotalTableWidget->setColumnCount(5);
+    ui->mealTotalTableWidget->setHorizontalHeaderLabels(totalsHeaders);
+
+    ui->createdMealFoodList->setColumnCount(8);
+    ui->createdMealFoodList->setHorizontalHeaderLabels(dailyFoodsHeaders);
 
     for (int c = 0; c < ui->foodListTableWidget->horizontalHeader()->count(); ++c)
     {
         ui->foodListTableWidget->horizontalHeader()->setSectionResizeMode(c, QHeaderView::Stretch);
     }
-
-    ui->masterFoodTableWidget->setColumnCount(7);
-    ui->masterFoodTableWidget->setHorizontalHeaderLabels(headers);
-
-    ui->masterFoodTableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    ui->masterFoodTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
-    ui->masterFoodTableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
-
-    ui->foodTotalsTableWidget->setFixedHeight(50);
-    ui->foodTotalsTableWidget->setColumnCount(5);
-    ui->foodTotalsTableWidget->setHorizontalHeaderLabels(totalsHeaders);
-    ui->foodTotalsTableWidget->setRowCount(1);
 
     for (int c = 0; c < ui->masterFoodTableWidget->horizontalHeader()->count(); ++c)
     {
         ui->masterFoodTableWidget->horizontalHeader()->setSectionResizeMode(c, QHeaderView::Stretch);
-        ui->foodListTableWidget->horizontalHeader()->setSectionResizeMode(c, QHeaderView::Stretch);
     }
 
-    for (int c = 0; c < ui->foodListTableWidget->horizontalHeader()->count(); ++c)
+    for (int c = 0; c < ui->mealCreatorFoodList->horizontalHeader()->count(); ++c)
     {
-        ui->foodListTableWidget->horizontalHeader()->setSectionResizeMode(c, QHeaderView::Stretch);
+        ui->mealCreatorFoodList->horizontalHeader()->setSectionResizeMode(c, QHeaderView::Stretch);
+    }
+
+    for (int c = 0; c < ui->createdMealFoodList->horizontalHeader()->count(); ++c)
+    {
+        ui->createdMealFoodList->horizontalHeader()->setSectionResizeMode(c, QHeaderView::Stretch);
     }
 
     for (int c = 0; c < ui->foodTotalsTableWidget->horizontalHeader()->count(); ++c)
@@ -62,8 +69,24 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->foodTotalsTableWidget->horizontalHeader()->setSectionResizeMode(c, QHeaderView::Stretch);
     }
 
+    for (int c = 0; c < ui->mealTotalTableWidget->horizontalHeader()->count(); ++c)
+    {
+        ui->mealTotalTableWidget->horizontalHeader()->setSectionResizeMode(c, QHeaderView::Stretch);
+    }
 
-    m_dbManager = new DatabaseManager(QCoreApplication::applicationDirPath() + QDir::separator() + "masterFoodList.db");
+    ui->masterFoodTableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->masterFoodTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->masterFoodTableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
+
+    ui->mealCreatorFoodList->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->mealCreatorFoodList->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->mealCreatorFoodList->setSelectionMode(QAbstractItemView::SingleSelection);
+
+    ui->foodTotalsTableWidget->setFixedHeight(50);
+    ui->foodTotalsTableWidget->setRowCount(1);
+
+    ui->mealTotalTableWidget->setFixedHeight(50);
+    ui->mealTotalTableWidget->setRowCount(1);
 
     ui->foodTotalsTableWidget->setItem(0,0, new QTableWidgetItem(QString("0")));
     ui->foodTotalsTableWidget->setItem(0,1, new QTableWidgetItem(QString("0")));
@@ -71,14 +94,25 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->foodTotalsTableWidget->setItem(0,3, new QTableWidgetItem(QString("0")));
     ui->foodTotalsTableWidget->setItem(0,4, new QTableWidgetItem(QString("0")));
 
+    ui->mealTotalTableWidget->setItem(0,0, new QTableWidgetItem(QString("0")));
+    ui->mealTotalTableWidget->setItem(0,1, new QTableWidgetItem(QString("0")));
+    ui->mealTotalTableWidget->setItem(0,2, new QTableWidgetItem(QString("0")));
+    ui->mealTotalTableWidget->setItem(0,3, new QTableWidgetItem(QString("0")));
+    ui->mealTotalTableWidget->setItem(0,4, new QTableWidgetItem(QString("0")));
+
+    m_dbManager = new DatabaseManager(QCoreApplication::applicationDirPath() + QDir::separator() + "masterFoodList.db");
+
     populateInitialFoodList();
     populateInitialDailyFoodList();
     updateDailyTotal();
 
-    //QRect rect = ui->horizontalSpacer->geometry();
-    //rect.setWidth(ui->foodListTableWidget->columnWidth(0) + ui->foodListTableWidget->columnWidth(1) + ui->foodListTableWidget->columnWidth(2) );
-
-    //ui->horizontalSpacer->setGeometry(rect);
+    if(m_masterFoodRows > 0)
+    {
+        ui->addToDailyFoodPushButton->setEnabled(true);
+        ui->foodTabEditFoodButton->setEnabled(true);
+        ui->foodTabDeleteFoodButton->setEnabled(true);
+        ui->addToMealArrowButton->setEnabled(true);
+    }
 }
 
 MainWindow::~MainWindow()
@@ -97,6 +131,10 @@ void MainWindow::on_tabWidget_currentChanged(int index)
     {
         ui->masterFoodTableWidget->selectRow(0);
     }
+    else if(index == 2)
+    {
+        ui->mealCreatorFoodList->selectRow(0);
+    }
 }
 
 void MainWindow::on_foodTabAddFoodButton_clicked()
@@ -108,6 +146,19 @@ void MainWindow::on_foodTabAddFoodButton_clicked()
         populateMasterFoodsRow(newFoodItem);
 
         m_dbManager->addFood(newFoodItem);
+
+        if(m_masterFoodRows == 1)
+        {
+            ui->addToDailyFoodPushButton->setEnabled(true);
+            ui->foodTabEditFoodButton->setEnabled(true);
+            ui->foodTabDeleteFoodButton->setEnabled(true);
+
+            ui->addToMealArrowButton->setEnabled(true);
+            ui->removeFromMealArrowButton->setEnabled(true);
+
+            ui->masterFoodTableWidget->selectRow(0);
+            ui->mealCreatorFoodList->selectRow(0);
+        }
     }
 }
 void MainWindow::on_calendarWidget_clicked(const QDate &date)
@@ -196,8 +247,6 @@ void MainWindow::populateInitialDailyFoodList()
         double fiber = query.value(fiberFieldNo).toDouble(&ok);
         double protein = query.value(proteinFieldNo).toDouble(&ok);
 
-        qDebug() << "id1 = " << id << "date =" << date;
-
         FoodData* newFoodItem = new FoodData(id.toStdString(), name.toStdString(), serving.toStdString(), date.toStdString(), numServings, calories, fat, carbs, fiber, protein);
         m_idFoodDataMap.insert(make_pair(newFoodItem->getID(), newFoodItem));
 
@@ -215,8 +264,6 @@ void MainWindow::populateInitialDailyFoodList()
             double fiber = query.value(fiberFieldNo).toDouble(&ok);
             double protein = query.value(proteinFieldNo).toDouble(&ok);
 
-            qDebug() << "ID2 = " << id << "date =" << date;
-
             FoodData* newFoodItem = new FoodData(id.toStdString(), name.toStdString(), serving.toStdString(), date.toStdString(), numServings, calories, fat, carbs, fiber, protein);
             m_idFoodDataMap.insert(make_pair(newFoodItem->getID(), newFoodItem));
 
@@ -232,6 +279,7 @@ void MainWindow::populateInitialDailyFoodList()
 void MainWindow::populateMasterFoodsRow(const FoodData *newFoodItem)
 {
     ui->masterFoodTableWidget->setRowCount(m_masterFoodRows+1);
+    ui->mealCreatorFoodList->setRowCount(m_masterFoodRows+1);
 
     ui->masterFoodTableWidget->setItem(m_masterFoodRows,0, new QTableWidgetItem(QString::fromStdString(newFoodItem->getName())));
     ui->masterFoodTableWidget->setItem(m_masterFoodRows,1, new QTableWidgetItem(QString::fromStdString(newFoodItem->getServing())));
@@ -240,6 +288,14 @@ void MainWindow::populateMasterFoodsRow(const FoodData *newFoodItem)
     ui->masterFoodTableWidget->setItem(m_masterFoodRows,4, new QTableWidgetItem(QString::number(newFoodItem->getCarbs())));
     ui->masterFoodTableWidget->setItem(m_masterFoodRows,5, new QTableWidgetItem(QString::number(newFoodItem->getFiber())));
     ui->masterFoodTableWidget->setItem(m_masterFoodRows,6, new QTableWidgetItem(QString::number(newFoodItem->getProtein())));
+
+    ui->mealCreatorFoodList->setItem(m_masterFoodRows,0, new QTableWidgetItem(QString::fromStdString(newFoodItem->getName())));
+    ui->mealCreatorFoodList->setItem(m_masterFoodRows,1, new QTableWidgetItem(QString::fromStdString(newFoodItem->getServing())));
+    ui->mealCreatorFoodList->setItem(m_masterFoodRows,2, new QTableWidgetItem(QString::number(newFoodItem->getCalories())));
+    ui->mealCreatorFoodList->setItem(m_masterFoodRows,3, new QTableWidgetItem(QString::number(newFoodItem->getFats())));
+    ui->mealCreatorFoodList->setItem(m_masterFoodRows,4, new QTableWidgetItem(QString::number(newFoodItem->getCarbs())));
+    ui->mealCreatorFoodList->setItem(m_masterFoodRows,5, new QTableWidgetItem(QString::number(newFoodItem->getFiber())));
+    ui->mealCreatorFoodList->setItem(m_masterFoodRows,6, new QTableWidgetItem(QString::number(newFoodItem->getProtein())));
 
     ++m_masterFoodRows;
 }
@@ -269,6 +325,27 @@ void MainWindow::populateDailyFoodsRow(const FoodData *newFoodItem)
     }
 }
 
+void MainWindow::populateNewMealRow(const FoodData *newFoodItem)
+{
+    ui->createdMealFoodList->setRowCount(m_mealFoodRows+1);
+
+    ui->createdMealFoodList->setItem(m_mealFoodRows,0, new QTableWidgetItem(QString::number(newFoodItem->getNumServings())));
+    ui->createdMealFoodList->setItem(m_mealFoodRows,1, new QTableWidgetItem(QString::fromStdString(newFoodItem->getName())));
+    ui->createdMealFoodList->setItem(m_mealFoodRows,2, new QTableWidgetItem(QString::fromStdString(newFoodItem->getServing())));
+    ui->createdMealFoodList->setItem(m_mealFoodRows,3, new QTableWidgetItem(QString::number(newFoodItem->getCalories())));
+    ui->createdMealFoodList->setItem(m_mealFoodRows,4, new QTableWidgetItem(QString::number(newFoodItem->getFats())));
+    ui->createdMealFoodList->setItem(m_mealFoodRows,5, new QTableWidgetItem(QString::number(newFoodItem->getCarbs())));
+    ui->createdMealFoodList->setItem(m_mealFoodRows,6, new QTableWidgetItem(QString::number(newFoodItem->getFiber())));
+    ui->createdMealFoodList->setItem(m_mealFoodRows,7, new QTableWidgetItem(QString::number(newFoodItem->getProtein())));
+
+    ++m_mealFoodRows;
+
+    if(m_mealFoodRows == 1)
+    {
+        ui->removeFromMealArrowButton->setEnabled(true);
+    }
+}
+
 void MainWindow::updateDailyTotal()
 {
     double caloriesTotal = 0.0;
@@ -294,11 +371,81 @@ void MainWindow::updateDailyTotal()
     ui->foodTotalsTableWidget->item(0,4)->setText(QString::number(proteinTotal));
 }
 
+void MainWindow::updateMealTotal()
+{
+    double caloriesTotal = 0.0;
+    double fatsTotal = 0.0;
+    double carbsTotal = 0.0;
+    double fiberTotal = 0.0;
+    double proteinTotal = 0.0;
+    bool ok = false;
+
+    for(int i = 0; i < ui->createdMealFoodList->rowCount(); ++i)
+    {
+        caloriesTotal += ui->createdMealFoodList->item(i,3)->text().toDouble(&ok);
+        fatsTotal += ui->createdMealFoodList->item(i,4)->text().toDouble(&ok);
+        carbsTotal += ui->createdMealFoodList->item(i,5)->text().toDouble(&ok);
+        fiberTotal += ui->createdMealFoodList->item(i,6)->text().toDouble(&ok);
+        proteinTotal += ui->createdMealFoodList->item(i,7)->text().toDouble(&ok);
+    }
+
+    ui->mealTotalTableWidget->item(0,0)->setText(QString::number(caloriesTotal));
+    ui->mealTotalTableWidget->item(0,1)->setText(QString::number(fatsTotal));
+    ui->mealTotalTableWidget->item(0,2)->setText(QString::number(carbsTotal));
+    ui->mealTotalTableWidget->item(0,3)->setText(QString::number(fiberTotal));
+    ui->mealTotalTableWidget->item(0,4)->setText(QString::number(proteinTotal));
+}
+
+void MainWindow::updateEditedDailyFoods(const FoodData* newFoodItem)
+{
+    for(int i = 0; i < ui->foodListTableWidget->rowCount(); ++i)
+    {
+         if(ui->foodListTableWidget->item(i,1)->text().toStdString() == newFoodItem->getName())
+         {
+             ui->foodListTableWidget->blockSignals(true);
+             bool ok;
+             double numServings = ui->foodListTableWidget->item(i, 0)->text().toDouble(&ok);
+
+             double calories = newFoodItem->getCalories() * numServings;
+             double fats = newFoodItem->getFats() * numServings;
+             double carbs = newFoodItem->getCarbs() * numServings;
+             double fiber = newFoodItem->getFiber() * numServings;
+             double protein = newFoodItem->getProtein() * numServings;
+
+             ui->foodListTableWidget->item(i, 3)->setText(QString::number(calories));
+             ui->foodListTableWidget->item(i, 4)->setText(QString::number(fats));
+             ui->foodListTableWidget->item(i, 5)->setText(QString::number(carbs));
+             ui->foodListTableWidget->item(i, 6)->setText(QString::number(fiber));
+             ui->foodListTableWidget->item(i, 7)->setText(QString::number(protein));
+
+             ui->foodListTableWidget->blockSignals(false);
+
+             updateDailyTotal();
+
+             string selectedDate = getSelectedDate();
+             std::map<std::string, int>::const_iterator iter = m_idRowMap.begin();
+             while(iter != m_idRowMap.end())
+             {
+                 if(iter->second == i && m_idFoodDataMap[iter->first]->getDate() == selectedDate)
+                 {
+                     m_idFoodDataMap[iter->first]->setCalories(calories);
+                     m_idFoodDataMap[iter->first]->setFats(fats);
+                     m_idFoodDataMap[iter->first]->setCarbs(carbs);
+                     m_idFoodDataMap[iter->first]->setFiber(fiber);
+                     m_idFoodDataMap[iter->first]->setProtein(protein);
+
+                     m_dbManager->updateDailyFood(m_idFoodDataMap[iter->first]);
+                     break;
+                 }
+             }
+         }
+    }
+}
+
 double MainWindow::getServingNumber(int row) const
 {
     bool ok = false;
     return ui->foodListTableWidget->item(row,0)->text().toDouble(&ok);
-    //return ui->servingsTableWidget->item(row,0)->data(Qt::DisplayRole).toReal(&ok);
 }
 
 std::__1::string MainWindow::getSelectedDate() const
@@ -337,6 +484,8 @@ void MainWindow::on_foodTabEditFoodButton_clicked()
         ui->masterFoodTableWidget->item(row,4)->setText(QString::number(editedFood->getCarbs()));
         ui->masterFoodTableWidget->item(row,5)->setText(QString::number(editedFood->getFiber()));
         ui->masterFoodTableWidget->item(row,6)->setText(QString::number(editedFood->getProtein()));
+
+        updateEditedDailyFoods(editedFood);
     }
 
 }
@@ -410,8 +559,6 @@ void MainWindow::on_foodListTableWidget_cellChanged(int row, int column)
                 bool ok;
                 double numServings = ui->foodListTableWidget->item(row, 0)->text().toDouble(&ok);
                 double newNumServings = (numServings/oldNumServings);
-
-                qDebug() << "New Number Servings = " << newNumServings;
 
                 double calories = ui->foodListTableWidget->item(row, 3)->text().toDouble(&ok) * newNumServings;
                 double fats = ui->foodListTableWidget->item(row, 4)->text().toDouble(&ok) * newNumServings;
@@ -491,4 +638,60 @@ void MainWindow::on_deleteDailyFoodPushButton_clicked()
 
         m_idRowMap.erase(id);
      }
+}
+
+void MainWindow::on_mealsTabWidget_currentChanged(int index)
+{
+    if(index == 1)
+    {
+        ui->masterFoodTableWidget->selectRow(0);
+    }
+    else if(index == 2)
+    {
+        ui->mealCreatorFoodList->selectRow(0);
+    }
+}
+
+void MainWindow::on_addToMealArrowButton_clicked()
+{
+    int row = ui->mealCreatorFoodList->currentRow();
+    bool ok = false;
+
+    FoodData* newMealFood = new FoodData( ui->mealCreatorFoodList->item(row,0)->text().toStdString(),
+                                          ui->mealCreatorFoodList->item(row,1)->text().toStdString(),
+                                          1.0,
+                                          ui->mealCreatorFoodList->item(row,2)->text().toDouble(&ok),
+                                          ui->mealCreatorFoodList->item(row,3)->text().toDouble(&ok),
+                                          ui->mealCreatorFoodList->item(row,4)->text().toDouble(&ok),
+                                          ui->mealCreatorFoodList->item(row,5)->text().toDouble(&ok),
+                                          ui->mealCreatorFoodList->item(row,6)->text().toDouble(&ok));
+
+    populateNewMealRow(newMealFood);
+    updateMealTotal();
+
+    if(m_mealCreatorServings > 0.0 && m_mealCreatorName.size() > 0)
+    {
+        ui->addToFoodListMealCreatorPushButton->setEnabled(true);
+    }
+}
+
+void MainWindow::on_mealCreatorNameLineEdit_textEdited(const QString &arg1)
+{
+    m_mealCreatorName = arg1;
+
+    if(m_mealCreatorServings > 0.0 && ui->createdMealFoodList->rowCount() > 0)
+    {
+        ui->addToFoodListMealCreatorPushButton->setEnabled(true);
+    }
+}
+
+void MainWindow::on_numServingsLineEdit_textEdited(const QString &arg1)
+{
+    bool ok = false;
+    m_mealCreatorServings = arg1.toDouble(&ok);
+
+    if(m_mealCreatorName.size() > 0 && ui->createdMealFoodList->rowCount() > 0)
+    {
+        ui->addToFoodListMealCreatorPushButton->setEnabled(true);
+    }
 }
