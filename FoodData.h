@@ -8,6 +8,7 @@ class FoodData
 public:
     FoodData();
     FoodData(const std::string& id, const std::string& name, const std::string& serving, const std::string& date, double numServings, double calories, double fats, double carbs, double fiber, double protein);
+    FoodData(const std::string& name, const std::string& serving, double numServings, double calories, double fats, double carbs, double fiber, double protein);
     FoodData(const std::string& name, const std::string& serving, double calories, double fats, double carbs, double fiber, double protein);
 
     void setID(const std::string& id) { m_id = id;}
