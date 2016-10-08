@@ -52,6 +52,12 @@ private slots:
 
     void on_numServingsLineEdit_textEdited(const QString &arg1);
 
+    void on_addToFoodListMealCreatorPushButton_clicked();
+
+    void on_servingLineEdit_textEdited(const QString &arg1);
+
+    void on_createdMealFoodList_cellChanged(int row, int column);
+
 private:
 
     void populateInitialFoodList();
@@ -79,11 +85,16 @@ private:
     int m_mealFoodRows;
     DateFoodDataMap m_dateFoodsMap;
     DatabaseManager* m_dbManager;
+
     std::map<std::string, FoodData*> m_idFoodDataMap;
     std::map<std::string, int> m_idRowMap;
+
+    std::map<int, double> m_rowNumServingCreatedMealMap;
+
     int m_selectedDailyFoodRow;
 
     QString m_mealCreatorName;
+    QString m_mealCreatorServingName;
     double m_mealCreatorServings;
 };
 

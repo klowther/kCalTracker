@@ -13,7 +13,7 @@
 using namespace std;
 
 MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent), ui(new Ui::MainWindow), m_masterFoodRows(0), m_foodRows(0), m_mealFoodRows(0), m_mealCreatorName(""), m_mealCreatorServings(0.0)
+    QMainWindow(parent), ui(new Ui::MainWindow), m_masterFoodRows(0), m_foodRows(0), m_mealFoodRows(0), m_mealCreatorName(""), m_mealCreatorServings(1.0)
 {
     ui->setupUi(this);
 
@@ -327,6 +327,7 @@ void MainWindow::populateDailyFoodsRow(const FoodData *newFoodItem)
 
 void MainWindow::populateNewMealRow(const FoodData *newFoodItem)
 {
+    ui->createdMealFoodList->blockSignals(true);
     ui->createdMealFoodList->setRowCount(m_mealFoodRows+1);
 
     ui->createdMealFoodList->setItem(m_mealFoodRows,0, new QTableWidgetItem(QString::number(newFoodItem->getNumServings())));
@@ -337,6 +338,9 @@ void MainWindow::populateNewMealRow(const FoodData *newFoodItem)
     ui->createdMealFoodList->setItem(m_mealFoodRows,5, new QTableWidgetItem(QString::number(newFoodItem->getCarbs())));
     ui->createdMealFoodList->setItem(m_mealFoodRows,6, new QTableWidgetItem(QString::number(newFoodItem->getFiber())));
     ui->createdMealFoodList->setItem(m_mealFoodRows,7, new QTableWidgetItem(QString::number(newFoodItem->getProtein())));
+    ui->createdMealFoodList->blockSignals(false);
+
+    m_rowNumServingCreatedMealMap.insert(make_pair(m_mealFoodRows,newFoodItem->getNumServings()));
 
     ++m_mealFoodRows;
 
@@ -389,11 +393,11 @@ void MainWindow::updateMealTotal()
         proteinTotal += ui->createdMealFoodList->item(i,7)->text().toDouble(&ok);
     }
 
-    ui->mealTotalTableWidget->item(0,0)->setText(QString::number(caloriesTotal));
-    ui->mealTotalTableWidget->item(0,1)->setText(QString::number(fatsTotal));
-    ui->mealTotalTableWidget->item(0,2)->setText(QString::number(carbsTotal));
-    ui->mealTotalTableWidget->item(0,3)->setText(QString::number(fiberTotal));
-    ui->mealTotalTableWidget->item(0,4)->setText(QString::number(proteinTotal));
+    ui->mealTotalTableWidget->item(0,0)->setText(QString::number(caloriesTotal/m_mealCreatorServings));
+    ui->mealTotalTableWidget->item(0,1)->setText(QString::number(fatsTotal/m_mealCreatorServings));
+    ui->mealTotalTableWidget->item(0,2)->setText(QString::number(carbsTotal/m_mealCreatorServings));
+    ui->mealTotalTableWidget->item(0,3)->setText(QString::number(fiberTotal/m_mealCreatorServings));
+    ui->mealTotalTableWidget->item(0,4)->setText(QString::number(proteinTotal/m_mealCreatorServings));
 }
 
 void MainWindow::updateEditedDailyFoods(const FoodData* newFoodItem)
@@ -679,7 +683,7 @@ void MainWindow::on_mealCreatorNameLineEdit_textEdited(const QString &arg1)
 {
     m_mealCreatorName = arg1;
 
-    if(m_mealCreatorServings > 0.0 && ui->createdMealFoodList->rowCount() > 0)
+    if(m_mealCreatorServings > 0.0 && ui->createdMealFoodList->rowCount() > 0 && m_mealCreatorServingName.size() > 0)
     {
         ui->addToFoodListMealCreatorPushButton->setEnabled(true);
     }
@@ -690,8 +694,62 @@ void MainWindow::on_numServingsLineEdit_textEdited(const QString &arg1)
     bool ok = false;
     m_mealCreatorServings = arg1.toDouble(&ok);
 
-    if(m_mealCreatorName.size() > 0 && ui->createdMealFoodList->rowCount() > 0)
+    updateMealTotal();
+
+    if(m_mealCreatorName.size() > 0 && ui->createdMealFoodList->rowCount() > 0 && m_mealCreatorServingName.size() > 0)
     {
         ui->addToFoodListMealCreatorPushButton->setEnabled(true);
+    }
+}
+
+void MainWindow::on_addToFoodListMealCreatorPushButton_clicked()
+{
+    bool ok = false;
+    FoodData* newCreatedMeal = new FoodData( ui->mealCreatorNameLineEdit->text().toStdString(),
+                                             ui->servingLineEdit->text().toStdString(),
+                                             ui->numServingsLineEdit->text().toDouble(&ok),
+                                             ui->mealTotalTableWidget->item(0,0)->text().toDouble(&ok),
+                                             ui->mealTotalTableWidget->item(0,1)->text().toDouble(&ok),
+                                             ui->mealTotalTableWidget->item(0,2)->text().toDouble(&ok),
+                                             ui->mealTotalTableWidget->item(0,3)->text().toDouble(&ok),
+                                             ui->mealTotalTableWidget->item(0,4)->text().toDouble(&ok));
+
+    populateMasterFoodsRow(newCreatedMeal);
+    m_dbManager->addFood(newCreatedMeal);
+}
+
+void MainWindow::on_servingLineEdit_textEdited(const QString &arg1)
+{
+    m_mealCreatorServingName = arg1;
+
+    if(m_mealCreatorName.size() > 0 && ui->createdMealFoodList->rowCount() > 0 && m_mealCreatorServings > 0.0)
+    {
+        ui->addToFoodListMealCreatorPushButton->setEnabled(true);
+    }
+}
+
+void MainWindow::on_createdMealFoodList_cellChanged(int row, int column)
+{
+    if(column == 0)
+    {
+        double oldNumServings = m_rowNumServingCreatedMealMap[row];
+
+        bool ok;
+        double numServings = ui->createdMealFoodList->item(row, 0)->text().toDouble(&ok);
+        double newNumServings = (numServings/oldNumServings);
+
+        double calories = ui->createdMealFoodList->item(row, 3)->text().toDouble(&ok) * newNumServings;
+        double fats = ui->createdMealFoodList->item(row, 4)->text().toDouble(&ok) * newNumServings;
+        double carbs = ui->createdMealFoodList->item(row, 5)->text().toDouble(&ok) * newNumServings;
+        double fiber = ui->createdMealFoodList->item(row, 6)->text().toDouble(&ok) * newNumServings;
+        double protein = ui->createdMealFoodList->item(row, 7)->text().toDouble(&ok) * newNumServings;
+
+        ui->createdMealFoodList->item(row, 3)->setText(QString::number(calories));
+        ui->createdMealFoodList->item(row, 4)->setText(QString::number(fats));
+        ui->createdMealFoodList->item(row, 5)->setText(QString::number(carbs));
+        ui->createdMealFoodList->item(row, 6)->setText(QString::number(fiber));
+        ui->createdMealFoodList->item(row, 7)->setText(QString::number(protein));
+
+        updateMealTotal();
     }
 }

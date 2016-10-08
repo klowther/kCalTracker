@@ -248,18 +248,14 @@
             <widget class="QLineEdit" name="mealCreatorNameLineEdit"/>
            </item>
            <item>
-            <widget class="QLabel" name="numServingsLabel">
+            <widget class="QLabel" name="servingLabel">
              <property name="text">
-              <string>Num Servings:</string>
+              <string>Serving Size:</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QLineEdit" name="numServingsLineEdit">
-             <property name="inputMethodHints">
-              <set>Qt::ImhNone</set>
-             </property>
-            </widget>
+            <widget class="QLineEdit" name="servingLineEdit"/>
            </item>
           </layout>
          </item>
@@ -278,6 +274,23 @@
              </property>
              <property name="text">
               <string>Add To Food List</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="numServingsLabel">
+             <property name="text">
+              <string>Num Servings in Meal:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="numServingsLineEdit">
+             <property name="inputMethodHints">
+              <set>Qt::ImhNone</set>
+             </property>
+             <property name="text">
+              <string>1</string>
              </property>
             </widget>
            </item>
